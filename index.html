@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Happy Birthday</title>
+
+<style>
+
+*{
+box-sizing:border-box;
+}
+
+body{
+margin:0;
+font-family:sans-serif;
+text-align:center;
+overflow-x:hidden;
+}
+
+.screen{
+min-height:100vh;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:flex-start;
+padding-top:50vh;
+background-size:cover;
+background-position:center;
+}
+
+/* 背景 */
+
+#start{
+background-image:url("start.JPG");
+}
+
+#clear{
+display:none;
+background-image:url("clear.JPG");
+padding-top:40px;
+}
+
+#game{
+display:none;
+padding-top:80px;
+}
+
+/* メッセージボックス */
+
+.messageBox{
+background:rgba(255,255,255,0.5);
+padding:20px;
+border-radius:20px;
+max-width:340px;
+}
+
+.startBox{
+transform:scale(0.8);
+}
+
+button{
+background:#ff6b9d;
+color:white;
+border:none;
+padding:15px 30px;
+font-size:18px;
+border-radius:30px;
+margin-top:20px;
+cursor:pointer;
+}
+
+/* カード */
+
+.grid{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px;
+width:90vw;
+max-width:360px;
+margin:20px auto;
+}
+
+.card{
+position:relative;
+width:100%;
+aspect-ratio:1/1;
+cursor:pointer;
+}
+
+.card img{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+border-radius:12px;
+}
+
+.back{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#ffb3cc;
+border-radius:12px;
+display:flex;
+align-items:center;
+justify-content:center;
+font-size:28px;
+color:white;
+}
+
+.open .back{
+display:none;
+}
+
+/* クリアメッセージ */
+
+.clearMessage{
+background:rgba(255,255,255,0.5);
+padding:30px;
+border-radius:20px;
+max-width:420px;
+font-size:22px;
+line-height:1.9;
+margin-top:-80px;
+}
+
+/* スライドショー */
+
+.slideshowArea{
+position:fixed;
+bottom:20px;
+right:20px;
+display:none;
+align-items:center;
+gap:10px;
+}
+
+.slideLabel{
+background:rgba(255,255,255,0.5);
+padding:8px 12px;
+border-radius:10px;
+font-size:14px;
+}
+
+#slideshow{
+width:120px;
+height:120px;
+object-fit:cover;
+border-radius:12px;
+}
+
+/* 紙吹雪 */
+
+#confetti{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+pointer-events:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<audio id="bgm" src="birthday.mp3" loop></audio>
+
+<!-- スタート -->
+
+<div id="start" class="screen">
+
+<div class="messageBox startBox">
+
+<h1>Happy Birthday 🎂</h1>
+
+<p>写真ゲームをクリアしてね</p>
+
+<button onclick="startGame()">はじめる</button>
+
+</div>
+
+</div>
+
+<!-- ゲーム -->
+
+<div id="game" class="screen">
+
+<div class="messageBox">
+
+<p>同じ写真を揃えてね</p>
+
+</div>
+
+<div class="grid" id="grid"></div>
+
+</div>
+
+<!-- クリア -->
+
+<div id="clear" class="screen">
+
+<div class="clearMessage">
+
+<h1>🎉 おめでとう 🎉</h1>
+
+<p>
+
+いつも本当にありがとう。<br>
+あなたがいるだけで<br>
+毎日が特別になります。<br><br>
+
+これからも<br>
+たくさん笑って過ごそうね。<br><br>
+
+今日はゆっくり休んでね。
+
+</p>
+
+</div>
+
+</div>
+
+<!-- スライドショー -->
+
+<div class="slideshowArea" id="slideshowArea">
+
+<div class="slideLabel">
+
+今回の可愛い写真たち
+
+</div>
+
+<img id="slideshow">
+
+</div>
+
+<canvas id="confetti"></canvas>
+
+<script>
+
+const photos=[
+"image1.JPG",
+"image2.JPG",
+"image3.JPG",
+"image4.JPG",
+"image5.JPG",
+"image6.JPG"
+];
+
+let deck=[];
+let first=null;
+let lock=false;
+let match=0;
+
+function startGame(){
+
+document.getElementById("start").style.display="none";
+document.getElementById("game").style.display="flex";
+
+document.getElementById("bgm").play();
+
+const grid=document.getElementById("grid");
+grid.innerHTML="";
+
+deck=[...photos,...photos];
+
+deck.sort(()=>Math.random()-0.5);
+
+deck.forEach(src=>{
+
+const card=document.createElement("div");
+card.className="card";
+card.dataset.img=src;
+
+card.innerHTML=`
+<img src="${src}">
+<div class="back">❤️</div>
+`;
+
+card.addEventListener("click",()=>flip(card));
+
+grid.appendChild(card);
+
+});
+
+}
+
+function flip(card){
+
+if(lock) return;
+if(card.classList.contains("open")) return;
+
+card.classList.add("open");
+
+if(!first){
+first=card;
+return;
+}
+
+lock=true;
+
+if(first.dataset.img===card.dataset.img){
+
+match++;
+first=null;
+lock=false;
+
+if(match===6){
+setTimeout(showClear,800);
+}
+
+}else{
+
+setTimeout(()=>{
+
+card.classList.remove("open");
+first.classList.remove("open");
+
+first=null;
+lock=false;
+
+},800);
+
+}
+
+}
+
+function showClear(){
+
+document.getElementById("game").style.display="none";
+document.getElementById("clear").style.display="flex";
+
+document.getElementById("slideshowArea").style.display="flex";
+
+startConfetti();
+startSlideshow();
+
+}
+
+function startSlideshow(){
+
+const slide=document.getElementById("slideshow");
+
+let index=0;
+
+slide.src=photos[0];
+
+setInterval(()=>{
+
+index++;
+if(index>=photos.length){
+index=0;
+}
+
+slide.src=photos[index];
+
+},2000);
+
+}
+
+function startConfetti(){
+
+const canvas=document.getElementById("confetti");
+const ctx=canvas.getContext("2d");
+
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
+let pieces=[];
+
+for(let i=0;i<120;i++){
+
+pieces.push({
+x:Math.random()*canvas.width,
+y:Math.random()*canvas.height-canvas.height,
+size:8+Math.random()*8,
+speed:2+Math.random()*3,
+color:`hsl(${Math.random()*360},100%,70%)`
+});
+
+}
+
+function update(){
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+pieces.forEach(p=>{
+
+p.y+=p.speed;
+
+if(p.y>canvas.height){
+p.y=-10;
+}
+
+ctx.fillStyle=p.color;
+ctx.fillRect(p.x,p.y,p.size,p.size);
+
+});
+
+requestAnimationFrame(update);
+
+}
+
+update();
+
+}
+
+</script>
+
+</body>
+</html>
